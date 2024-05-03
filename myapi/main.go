@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/yourname/reponame/models"
 )
 
 func main() {
@@ -20,24 +19,49 @@ func main() {
 	}
 	defer db.Close()
 
-	// 挿入データ生成
-	article := models.Article{
-		Title:    "test",
-		Contents: "test contents",
-		UserName: "sugiyama",
-	}
-
-	dbQuery := `
-		INSERT INTO articles (title, contents, username, nice, created_at)
-		VALUES (?, ?, ?, 0, now())
-	`
-
-	result, err := db.Exec(dbQuery, article.Title, article.Contents, article.UserName)
+	// トランザクション開始
+	tx, err := db.Begin()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
+	// article_id = 1記事のいいねを取得
+	selectQuery := `
+		SELECT nice
+		FROM articles
+		WHERE article_id = ?
+		`
+	targetArticleId := 3
+	row := tx.QueryRow(selectQuery, targetArticleId)
+	// 記事が取得できないパターンはロールバックする
+	if row.Err() != nil {
+		fmt.Println(row.Err())
+		tx.Rollback()
+		return
+	}
 
-	fmt.Println(result.LastInsertId())
-	fmt.Println(result.RowsAffected())
+	// いいね数読み込み
+	var niceNum int
+	err = row.Scan(&niceNum)
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return
+	}
+
+	// いいね数をインクリメントし、更新実行
+	updateQuery := `
+		UPDATE articles
+		SET nice = ?
+		WHERE article_id = ?
+		`
+	_, err = tx.Exec(updateQuery, niceNum+1, targetArticleId)
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+		return
+	}
+	// コミット実行
+	tx.Commit()
+	fmt.Printf("nice num: %d\n", niceNum+1)
 }
