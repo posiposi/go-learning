@@ -20,47 +20,24 @@ func main() {
 	}
 	defer db.Close()
 
+	// 挿入データ生成
+	article := models.Article{
+		Title:    "test",
+		Contents: "test contents",
+		UserName: "sugiyama",
+	}
+
 	dbQuery := `
-		SELECT *
-		FROM articles
-		WHERE article_id = ?
+		INSERT INTO articles (title, contents, username, nice, created_at)
+		VALUES (?, ?, ?, 0, now())
 	`
 
-	articleId := 3
-	row := db.QueryRow(dbQuery, articleId)
-	if err := row.Err(); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// 構造体用スライスを用意
-	articleArray := make([]models.Article, 0)
-	// 構造体にループ処理で投入するデータ用変数を用意
-	var article models.Article
-	// NULL許容カラム定義
-	var createdTime sql.NullTime
-	// Scanによるデータ取得
-	err = row.Scan(
-		&article.ID,
-		&article.Title,
-		&article.Contents,
-		&article.UserName,
-		&article.NiceNum,
-		&createdTime)
-
-	// データ生成日がNULLであるかの確認(NULLでなければtrue)
-	if createdTime.Valid {
-		article.CreatedAt = createdTime.Time
-	}
-
+	result, err := db.Exec(dbQuery, article.Title, article.Contents, article.UserName)
 	if err != nil {
 		fmt.Println(err)
 		return
-	} else {
-		// スライスにデータを追加
-		articleArray = append(articleArray, article)
 	}
 
-	// スライスの内容を出力する
-	fmt.Printf("%+v\n", articleArray)
+	fmt.Println(result.LastInsertId())
+	fmt.Println(result.RowsAffected())
 }
