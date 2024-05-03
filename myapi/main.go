@@ -23,44 +23,42 @@ func main() {
 	dbQuery := `
 		SELECT *
 		FROM articles
+		WHERE article_id = ?
 	`
 
-	rows, err := db.Query(dbQuery)
-	if err != nil {
+	articleId := 3
+	row := db.QueryRow(dbQuery, articleId)
+	if err := row.Err(); err != nil {
 		fmt.Println(err)
 		return
 	}
-	// 遅延実行でクエリクローズ
-	defer rows.Close()
 
 	// 構造体用スライスを用意
 	articleArray := make([]models.Article, 0)
-	for rows.Next() {
-		// 構造体にループ処理で投入するデータ用変数を用意
-		var article models.Article
-		// NULL許容カラム定義
-		var createdTime sql.NullTime
-		// Scanによるデータ取得
-		err := rows.Scan(
-			&article.ID,
-			&article.Title,
-			&article.Contents,
-			&article.UserName,
-			&article.NiceNum,
-			&createdTime)
+	// 構造体にループ処理で投入するデータ用変数を用意
+	var article models.Article
+	// NULL許容カラム定義
+	var createdTime sql.NullTime
+	// Scanによるデータ取得
+	err = row.Scan(
+		&article.ID,
+		&article.Title,
+		&article.Contents,
+		&article.UserName,
+		&article.NiceNum,
+		&createdTime)
 
-		// データ生成日がNULLであるかの確認
-		if createdTime.Valid {
-			article.CreatedAt = createdTime.Time
-		}
+	// データ生成日がNULLであるかの確認(NULLでなければtrue)
+	if createdTime.Valid {
+		article.CreatedAt = createdTime.Time
+	}
 
-		if err != nil {
-			fmt.Println(err)
-			return
-		} else {
-			// スライスにデータを追加
-			articleArray = append(articleArray, article)
-		}
+	if err != nil {
+		fmt.Println(err)
+		return
+	} else {
+		// スライスにデータを追加
+		articleArray = append(articleArray, article)
 	}
 
 	// スライスの内容を出力する
