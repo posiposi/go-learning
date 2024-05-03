@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/yourname/reponame/models"
 )
 
 func main() {
@@ -19,9 +20,35 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
+	dbQuery := `
+		SELECT title, contents, username, nice
+		FROM articles
+	`
+
+	rows, err := db.Query(dbQuery)
+	if err != nil {
 		fmt.Println(err)
-	} else {
-		fmt.Println("connect to DB")
+		return
 	}
+	// 遅延実行でクエリクローズ
+	defer rows.Close()
+
+	// 構造体用スライスを用意
+	articleArray := make([]models.Article, 0)
+	for rows.Next() {
+		// 構造体にループ処理で投入するデータ用変数を用意
+		var article models.Article
+		// Scanによるデータ取得
+		err := rows.Scan(&article.Title, &article.Contents, &article.UserName, &article.NiceNum)
+		if err != nil {
+			fmt.Println(err)
+			return
+		} else {
+			// スライスにデータを追加
+			articleArray = append(articleArray, article)
+		}
+	}
+
+	// スライスの内容を出力する
+	fmt.Printf("%+v\n", articleArray)
 }
