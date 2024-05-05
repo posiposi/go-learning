@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -29,6 +30,8 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "fail to encode json\n", http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("article post is success!")
 }
 
 func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
