@@ -1,33 +1,31 @@
 package repositories_test
 
 import (
-	"database/sql"
-	"fmt"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/yourname/reponame/models"
 	"github.com/yourname/reponame/repositories"
 )
 
+// SelectArticleList関数のテスト
 func TestSelectArticleList(t *testing.T) {
-	dbUser := "docker"
-	dbPassword := "docker"
-	dbDatabase := "sampledb"
-	dbConn := fmt.Sprintf("%s:%s@tcp(127.0.0.1:3306)/%s?parseTime=true", dbUser, dbPassword, dbDatabase)
-
-	db, err := sql.Open("mysql", dbConn)
+	expectedNum := 3
+	got, err := repositories.SelectArticleList(testDB, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
 
-	// テストの構造体を定義
+	if num := len(got); num != expectedNum {
+		t.Errorf("want %d but got %d articles\n", expectedNum, num)
+	}
+}
+
+// SelectArticleDetail関数のテスト
+func TestSelectArticleDetail(t *testing.T) {
 	tests := []struct {
 		testTitle string
 		expected  models.Article
 	}{
-		// サブテスト定義
 		{
 			testTitle: "subtest1",
 			expected: models.Article{
@@ -38,7 +36,8 @@ func TestSelectArticleList(t *testing.T) {
 				NiceNum:  4,
 			},
 		}, {
-			testTitle: "subtest2", expected: models.Article{
+			testTitle: "subtest2",
+			expected: models.Article{
 				ID:       2,
 				Title:    "2nd",
 				Contents: "Second blog post",
@@ -47,15 +46,14 @@ func TestSelectArticleList(t *testing.T) {
 			},
 		},
 	}
-	// ループで各サブテストを実行
+
 	for _, test := range tests {
 		t.Run(test.testTitle, func(t *testing.T) {
-			got, err := repositories.SelectArticleDetail(db, test.expected.ID)
-			// DB走査自体が失敗した場合はエラー
+			got, err := repositories.SelectArticleDetail(testDB, test.expected.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// 各アサーションを実行
+
 			if got.ID != test.expected.ID {
 				t.Errorf("ID: get %d but want %d\n", got.ID, test.expected.ID)
 			}
