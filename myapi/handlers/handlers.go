@@ -52,12 +52,10 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
-	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
-	if err != nil {
-		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
-	}
-	resString := fmt.Sprintf("Article No.%d\n", articleID)
-	io.WriteString(w, resString)
+	articleID := mux.Vars(req)["id"]
+	log.Println(articleID)
+	article := models.Article1
+	json.NewEncoder(w).Encode(article)
 }
 
 func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
