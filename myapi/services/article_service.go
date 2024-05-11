@@ -43,3 +43,19 @@ func PostArticleService(article models.Article) (models.Article, error) {
 	}
 	return newArticle, nil
 }
+
+func GetArticleListService(page int) ([]models.Article, error) {
+	// DB接続
+	db, err := connectDB()
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	// 指定ページの記事一覧を取得
+	articleList, err := repositories.SelectArticleList(db, page)
+	if err != nil {
+		return nil, err
+	}
+	return articleList, nil
+}
