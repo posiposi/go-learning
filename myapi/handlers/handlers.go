@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -10,9 +9,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/yourname/reponame/models"
+	"github.com/yourname/reponame/services"
 )
 
-// Request is GET
 func HelloHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "Hello, world!\n")
 }
@@ -25,13 +24,14 @@ func PostArticleHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	article := reqArticle
-	if err := json.NewEncoder(w).Encode(article); err != nil {
+	// サービス層メソッドで記事データを登録する
+	article, err := services.PostArticleService(reqArticle)
+	if err != nil {
 		http.Error(w, "fail to encode json\n", http.StatusInternalServerError)
 		return
 	}
-
 	log.Println("article post is success!")
+	json.NewEncoder(w).Encode(article)
 }
 
 func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
@@ -47,14 +47,27 @@ func ArticleListHandler(w http.ResponseWriter, req *http.Request) {
 	} else {
 		page = 1
 	}
-	resString := fmt.Sprintf("Article List (page %d)\n", page)
-	io.WriteString(w, resString)
+	// pageを元に記事一覧を取得する
+	articles, err := services.GetArticleListService(page)
+	if err != nil {
+		http.Error(w, "fail to get article list\n", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(articles)
 }
 
 func ArticleDetailHandler(w http.ResponseWriter, req *http.Request) {
-	articleID := mux.Vars(req)["id"]
-	log.Println(articleID)
-	article := models.Article1
+	articleID, err := strconv.Atoi(mux.Vars(req)["id"])
+	if err != nil {
+		http.Error(w, "Invalid query parameter", http.StatusBadRequest)
+		return
+	}
+	// service層メソッドで記事データを取得する
+	article, err := services.GetArticleService(articleID)
+	if err != nil {
+		http.Error(w, "fail to get article\n", http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(article)
 }
 
@@ -63,7 +76,11 @@ func PostNiceHandler(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewDecoder(req.Body).Decode(&reqArticle); err != nil {
 		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
 	}
-	article := reqArticle
+	article, err := services.PostNiceService(reqArticle.ID)
+	if err != nil {
+		http.Error(w, "fail post nice\n", http.StatusInternalServerError)
+		return
+	}
 	json.NewEncoder(w).Encode(article)
 }
 
@@ -72,6 +89,10 @@ func PostCommentHandler(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewDecoder(req.Body).Decode(&reqComment); err != nil {
 		http.Error(w, "fail to decode json\n", http.StatusBadRequest)
 	}
-	article := reqComment
-	json.NewEncoder(w).Encode(article)
+	comment, err := services.PostCommentService(reqComment)
+	if err != nil {
+		http.Error(w, "fail post comment\n", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(comment)
 }
