@@ -57,6 +57,7 @@ func GetArticleListService(page int) ([]models.Article, error) {
 	// 指定ページの記事一覧を取得
 	articleList, err := repositories.SelectArticleList(db, page)
 	if err != nil {
+		log.Print("記事一覧の取得に失敗しました")
 		return nil, err
 	}
 	return articleList, nil
