@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/yourname/reponame/models"
 )
@@ -42,6 +43,7 @@ func SelectArticleList(db *sql.DB, page int) ([]models.Article, error) {
 
 	rows, err := db.Query(sqlStr, articleNumPerPage, ((page - 1) * articleNumPerPage))
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	defer rows.Close()

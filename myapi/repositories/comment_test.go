@@ -3,39 +3,46 @@ package repositories_test
 import (
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/yourname/reponame/models"
 	"github.com/yourname/reponame/repositories"
 )
 
+// SelectCommentList関数のテスト
+func TestSelectCommentList(t *testing.T) {
+	articleID := 1
+	got, err := repositories.SelectCommentList(testDB, articleID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, comment := range got {
+		if comment.ArticleID != articleID {
+			t.Errorf("want comment of articleID %d but got ID %d\n", articleID, comment.ArticleID)
+		}
+	}
+}
+
 // InsertComment関数のテスト
 func TestInsertComment(t *testing.T) {
-	newComment := models.Comment{
+	comment := models.Comment{
 		ArticleID: 1,
-		Message:   "This is a comment",
+		Message:   "CommentInsertTest",
 	}
-	// CommentIDの現行最大値は2
+
 	expectedCommentID := 3
-	result, err := repositories.InsertComment(testDB, newComment)
-	// DB接続自体のエラー
+	newComment, err := repositories.InsertComment(testDB, comment)
 	if err != nil {
 		t.Error(err)
 	}
-	// アサーション実行
-	if result.ArticleID != newComment.ArticleID {
-		t.Errorf("want %d but got %d\n", newComment.ArticleID, result.ArticleID)
+	if newComment.CommentID != expectedCommentID {
+		t.Errorf("new comment id is expected %d but got %d\n", expectedCommentID, newComment.CommentID)
 	}
-	if result.Message != newComment.Message {
-		t.Errorf("want %s but got %s\n", newComment.Message, result.Message)
-	}
-	if result.CommentID != expectedCommentID {
-		t.Errorf("want %d but got %d\n", expectedCommentID, result.CommentID)
-	}
+
 	t.Cleanup(func() {
 		const sqlStr = `
 			delete from comments
 			where message = ?
 		`
-		testDB.Exec(sqlStr, newComment.Message)
+		testDB.Exec(sqlStr, comment.Message)
 	})
 }
